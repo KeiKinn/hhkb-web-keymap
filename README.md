@@ -20,6 +20,9 @@ The official PFU Keymap Tool enforces artificial client-side model restrictions 
 
 * **Hardware-Level Remapping**: Keymaps are burned directly into the HHKB's onboard Flash memory. Once saved, changes persist permanently across all devices (Mac, Windows, Linux, iPad, iOS, Android).
 * **Bypasses Classic Restrictions**: Directly talks to the HHKB configuration interface (`Interface 2`), unlocking native remap capabilities for the HHKB Classic.
+* **Direct Physical Keyboard Capture**: Click any virtual key and simply tap your physical keyboard to record the mapping instantly.
+* **Multi-Level Undo & Discard**: Native undo support (`Cmd+Z` / `Ctrl+Z`) and one-click rollback of unsaved edits.
+* **Dual-Tone Vintage Aesthetic**: Faithful visual simulation of the iconic Classic White (retro grey-blue & ivory white) and Charcoal Dark editions.
 * **Pure WebHID Native**: Works directly in the browser via `navigator.hid`. Zero compilation, zero driver installation.
 * **Full Layer Customization**: Full visual support for editing both the **Standard Layer** and **Fn Layer**.
 * **Clean Error Propagation**: Strict protocol error handling and diagnostic reporting. No swallowed exceptions; real hardware feedback is always surfaced.
@@ -60,11 +63,15 @@ This tool relies on the **WebHID API**, which is supported in all modern Chromiu
 Since this project consists of pure static web assets, running it locally requires no build steps or package managers.
 
 ### 1. Run local HTTP server
-Using Python 3 (built into macOS / Linux):
+Using the included zero-cache server (recommended to avoid browser caching during edits):
 ```bash
-python3 -m http.server 8080
+python3 serve.py
 ```
-Open your browser and navigate to `http://localhost:8080`.
+Or using standard Python module:
+```bash
+python3 -m http.server 8899
+```
+Open your browser and navigate to `http://localhost:8899`.
 
 ### 2. Run protocol test suite
 ```bash
@@ -99,17 +106,18 @@ python3 tests/test_protocol.py
 hhkb/
 ├── index.html            # Main semantic HTML entry
 ├── css/
-│   └── style.css         # Modern dark-mode aesthetic theme
+│   └── style.css         # Modern dark-mode & classic-white theme
 ├── js/
 │   ├── protocol.js       # Low-level HID packet framing, serialization & state machine
 │   ├── keymap-data.js    # HHKB ANSI 60-key matrix definition & USB HID keycode tables
-│   ├── app.js            # UI state management & event orchestration
+│   ├── app.js            # UI state management, physical capture, undo stack & orchestration
 │   └── i18n/             # Modular internationalization
 │       ├── en.js         # English translation dictionary
 │       ├── zh-CN.js      # Simplified Chinese translation dictionary
-│       └── index.js      # I18n single-instance manager
+│       └── index.js      # I18n core manager
 ├── tests/
 │   └── test_protocol.py  # Unit tests for protocol framing and buffer slicing
+├── serve.py              # Zero-cache local development server
 ├── .gitignore
 ├── LICENSE               # MIT License
 └── README.md
