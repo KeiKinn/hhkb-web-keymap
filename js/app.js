@@ -5,7 +5,10 @@ import { HHKB_ANSI_LAYOUT, HID_KEYCODES, DOM_CODE_TO_HID, getKeyName } from "./k
 class HHKBApp {
   constructor() {
     this.device = null;
+    this.deviceInfo = null;
+    this.deviceMode = null;
     this.currentLayer = "standard"; // "standard" | "fn"
+    this.currentCategory = "basic";
     this.selectedKeyIndex = null;
 
     // 128-byte layout buffers
@@ -133,7 +136,7 @@ class HHKBApp {
     this.dom.langSelect.value = i18n.getLocale();
     this.dom.langSelect.addEventListener("change", (e) => {
       i18n.setLocale(e.target.value);
-      this.updateSelectionBar();
+      this.refreshLanguageViews();
     });
 
     // Theme selection
@@ -192,9 +195,32 @@ class HHKBApp {
       btn.addEventListener("click", (e) => {
         document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
         e.target.classList.add("active");
-        this.renderPalette(e.target.dataset.category);
+        this.currentCategory = e.target.dataset.category;
+        this.renderPalette(this.currentCategory);
       });
     });
+  }
+
+  refreshLanguageViews() {
+    this.updateSelectionBar();
+    this.renderKeyboard();
+    this.renderPalette(this.currentCategory || "basic");
+
+    if (this.device && this.deviceInfo) {
+      const modeMap = {
+        0: i18n.t("device.modeHhk"),
+        1: i18n.t("device.modeMac"),
+        2: i18n.t("device.modeLite"),
+      };
+      this.dom.deviceMode.textContent = modeMap[this.deviceMode] || i18n.t("device.modeUnknown", { code: this.deviceMode });
+
+      this.dom.deviceStatus.textContent = i18n.t("app.statusConnected", {
+        model: this.deviceInfo.typeNumber || "HHKB",
+        firmware: this.deviceInfo.appFirmware || "1.0",
+      });
+    } else {
+      this.dom.deviceStatus.textContent = i18n.t("app.deviceNotConnected");
+    }
   }
 
   async connect() {
@@ -243,23 +269,23 @@ class HHKBApp {
       this.log(`Connected to USB device: ${selectedDevice.productName}`);
 
       // Read Device Info & Mode
-      const info = await this.device.getKeyboardInfo();
-      const mode = await this.device.getKeyboardMode();
+      this.deviceInfo = await this.device.getKeyboardInfo();
+      this.deviceMode = await this.device.getKeyboardMode();
 
-      this.dom.deviceModel.textContent = info.typeNumber || "HHKB";
-      this.dom.deviceSerial.textContent = info.serial || "N/A";
-      this.dom.deviceFirmware.textContent = info.appFirmware || "N/A";
+      this.dom.deviceModel.textContent = this.deviceInfo.typeNumber || "HHKB";
+      this.dom.deviceSerial.textContent = this.deviceInfo.serial || "N/A";
+      this.dom.deviceFirmware.textContent = this.deviceInfo.appFirmware || "N/A";
 
       const modeMap = {
         0: i18n.t("device.modeHhk"),
         1: i18n.t("device.modeMac"),
         2: i18n.t("device.modeLite"),
       };
-      this.dom.deviceMode.textContent = modeMap[mode] || i18n.t("device.modeUnknown", { code: mode });
+      this.dom.deviceMode.textContent = modeMap[this.deviceMode] || i18n.t("device.modeUnknown", { code: this.deviceMode });
 
       this.dom.deviceStatus.textContent = i18n.t("app.statusConnected", {
-        model: info.typeNumber || "HHKB",
-        firmware: info.appFirmware || "1.0",
+        model: this.deviceInfo.typeNumber || "HHKB",
+        firmware: this.deviceInfo.appFirmware || "1.0",
       });
 
       this.dom.connectBtn.classList.add("hidden");
@@ -385,13 +411,13 @@ class HHKBApp {
     this.dom.selectedKeyBar.innerHTML = `
       <div style="display:flex; flex-direction:column; gap:10px; width:100%;">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-          <span><strong>🎯 已选中 #${this.selectedKeyIndex} (${keyDef?.defaultLabel || ""})</strong>: 当前功能 = <span style="color:#60a5fa; font-weight:700;">0x${scancode.toString(16).padStart(2, "0").toUpperCase()} (${keyName})</span></span>
-          <span style="font-size:12px; color:#4ade80; background:rgba(74,222,128,0.15); padding:2px 8px; border-radius:4px;">● 物理键盘录制就绪：直接在键盘上敲按键即可</span>
+          <span><strong>🎯 ${i18n.t("keyboard.selectedPrefix")} #${this.selectedKeyIndex} (${keyDef?.defaultLabel || ""})</strong>: ${i18n.t("keyboard.currentFunction")} = <span style="color:#60a5fa; font-weight:700;">0x${scancode.toString(16).padStart(2, "0").toUpperCase()} (${keyName})</span></span>
+          <span style="font-size:12px; color:#4ade80; background:rgba(74,222,128,0.15); padding:2px 8px; border-radius:4px;">${i18n.t("keyboard.recorderReady")}</span>
         </div>
         <div class="quick-pill-row">
-          <span style="font-size:12px; color:#94a3b8;">一键快速替换为:</span>
+          <span style="font-size:12px; color:#94a3b8;">${i18n.t("keyboard.quickReplaceLabel")}</span>
           <button type="button" class="quick-pill-btn" data-code="0x2a">⌫ Backspace (0x2A)</button>
-          <button type="button" class="quick-pill-btn" data-code="0x31">\\ | 反斜杠 (0x31)</button>
+          <button type="button" class="quick-pill-btn" data-code="0x31">${i18n.t("keyboard.quickBackslash")} (0x31)</button>
           <button type="button" class="quick-pill-btn" data-code="0x4c">⌦ Delete (0x4C)</button>
           <button type="button" class="quick-pill-btn" data-code="0x29">⎋ Esc (0x29)</button>
           <button type="button" class="quick-pill-btn" data-code="0x28">↵ Return (0x28)</button>
@@ -450,7 +476,13 @@ class HHKBApp {
       setTimeout(() => targetKeyEl.classList.remove("just-updated"), 500);
     }
 
-    this.log(`✓ 已修改按键 #${this.selectedKeyIndex}：从 [${getKeyName(prevCode)}] 改为 [${getKeyName(code)}] (0x${code.toString(16).padStart(2, "0").toUpperCase()}) [层: ${this.currentLayer}]`);
+    this.log(`✓ ${i18n.t("actions.keyModifiedLog", {
+      index: this.selectedKeyIndex,
+      from: getKeyName(prevCode),
+      to: getKeyName(code),
+      code: code.toString(16).padStart(2, "0").toUpperCase(),
+      layer: this.currentLayer,
+    })}`);
   }
 
   renderPalette(category) {
