@@ -1,6 +1,6 @@
-import { i18n } from "./i18n/index.js?v=1.3.0";
-import { PFU_VENDOR_ID, HHKBDevice, HHKBError } from "./protocol.js?v=1.3.0";
-import { HHKB_ANSI_LAYOUT, HID_KEYCODES, DOM_CODE_TO_HID, getKeyName } from "./keymap-data.js?v=1.3.0";
+import { i18n } from "./i18n/index.js?v=1.4.0";
+import { PFU_VENDOR_ID, HHKBDevice, HHKBError } from "./protocol.js?v=1.4.0";
+import { HHKB_ANSI_LAYOUT, HID_KEYCODES, DOM_CODE_TO_HID, getKeyName } from "./keymap-data.js?v=1.4.0";
 
 class HHKBApp {
   constructor() {
@@ -14,6 +14,9 @@ class HHKBApp {
     // 128-byte layout buffers
     this.standardLayout = new Uint8Array(128);
     this.fnLayout = new Uint8Array(128);
+    this.initialStandardLayout = new Uint8Array(128);
+    this.initialFnLayout = new Uint8Array(128);
+    this.historyStack = []; // Actions: { layer, keyIndex, prevCode, newCode }
 
     // Initialize with default standard ANSI codes
     this.initDefaultLayouts();
@@ -33,6 +36,7 @@ class HHKBApp {
       layerFnBtn: document.getElementById("layer-fn-btn"),
 
       readBtn: document.getElementById("read-btn"),
+      undoBtn: document.getElementById("undo-btn"),
       writeBtn: document.getElementById("write-btn"),
       resetBtn: document.getElementById("reset-btn"),
       exportBtn: document.getElementById("export-btn"),
@@ -42,6 +46,7 @@ class HHKBApp {
       keyboardContainer: document.getElementById("keyboard-container"),
       selectedKeyBar: document.getElementById("selected-key-bar"),
       unsavedBanner: document.getElementById("unsaved-banner"),
+      discardBtn: document.getElementById("discard-btn"),
       quickFlashBtn: document.getElementById("quick-flash-btn"),
       paletteContainer: document.getElementById("palette-container"),
 
@@ -111,6 +116,9 @@ class HHKBApp {
     this.fnLayout[44] = 0x81; // Q -> VolDown
     this.fnLayout[43] = 0x80; // W -> VolUp
     this.fnLayout[42] = 0x7f; // E -> Mute
+
+    this.initialStandardLayout.set(this.standardLayout);
+    this.initialFnLayout.set(this.fnLayout);
   }
 
   log(msg) {
@@ -160,6 +168,12 @@ class HHKBApp {
     // Hardware Actions
     this.dom.readBtn.addEventListener("click", () => this.readFromKeyboard());
     this.dom.writeBtn.addEventListener("click", () => this.writeToKeyboard());
+    if (this.dom.undoBtn) {
+      this.dom.undoBtn.addEventListener("click", () => this.undo());
+    }
+    if (this.dom.discardBtn) {
+      this.dom.discardBtn.addEventListener("click", () => this.discardAllChanges());
+    }
     if (this.dom.quickFlashBtn) {
       this.dom.quickFlashBtn.addEventListener("click", () => this.writeToKeyboard());
     }
@@ -170,10 +184,26 @@ class HHKBApp {
     this.dom.importBtn.addEventListener("click", () => this.dom.importFileInput.click());
     this.dom.importFileInput.addEventListener("change", (e) => this.importJson(e));
 
+    // Global Undo shortcut (Cmd+Z / Ctrl+Z)
+    window.addEventListener("keydown", (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z" && !e.shiftKey) {
+        // If not typing in input/textarea
+        if (e.target.tagName !== "INPUT" && e.target.tagName !== "TEXTAREA") {
+          e.preventDefault();
+          this.undo();
+        }
+      }
+    });
+
     // Physical keyboard press listener (Direct recording)
     window.addEventListener("keydown", (e) => {
       // Ignore if typing inside textareas or inputs
       if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") {
+        return;
+      }
+
+      // Ignore if it is a shortcut
+      if (e.metaKey || e.ctrlKey || e.altKey) {
         return;
       }
 
@@ -468,9 +498,22 @@ class HHKBApp {
 
     const layout = this.getActiveLayout();
     const prevCode = layout[this.selectedKeyIndex];
+    if (prevCode === code) {
+      return; // No change
+    }
+
+    // Push action to history stack
+    this.historyStack.push({
+      layer: this.currentLayer,
+      keyIndex: this.selectedKeyIndex,
+      prevCode,
+      newCode: code,
+    });
+
     layout[this.selectedKeyIndex] = code;
 
     this.markUnsaved();
+    this.updateUndoButton();
     this.renderKeyboard();
     this.updateSelectionBar();
 
@@ -488,6 +531,69 @@ class HHKBApp {
       code: code.toString(16).padStart(2, "0").toUpperCase(),
       layer: this.currentLayer,
     })}`);
+  }
+
+  undo() {
+    if (this.historyStack.length === 0) return;
+
+    const action = this.historyStack.pop();
+    const layout = action.layer === "standard" ? this.standardLayout : this.fnLayout;
+    layout[action.keyIndex] = action.prevCode;
+
+    // Switch to layer of the affected key
+    if (this.currentLayer !== action.layer) {
+      this.switchLayer(action.layer);
+    }
+
+    this.selectedKeyIndex = action.keyIndex;
+
+    // Check if layout matches initial state
+    const isDirty = this.checkIsDirty();
+    if (!isDirty) {
+      this.markSaved();
+    }
+
+    this.updateUndoButton();
+    this.renderKeyboard();
+    this.updateSelectionBar();
+
+    this.log(`↩ ${i18n.t("actions.undoLog", {
+      index: action.keyIndex,
+      key: getKeyName(action.prevCode),
+    })}`);
+  }
+
+  discardAllChanges() {
+    if (!this.checkIsDirty()) return;
+
+    this.standardLayout.set(this.initialStandardLayout);
+    this.fnLayout.set(this.initialFnLayout);
+    this.historyStack = [];
+
+    this.markSaved();
+    this.updateUndoButton();
+    this.renderKeyboard();
+    this.updateSelectionBar();
+    this.log("↩ " + (i18n.getLocale() === "zh-CN" ? "已放弃所有未保存修改，恢复初始键位。" : "Discarded all unsaved changes. Layout restored."));
+  }
+
+  checkIsDirty() {
+    for (let i = 0; i < 128; i++) {
+      if (this.standardLayout[i] !== this.initialStandardLayout[i]) return true;
+      if (this.fnLayout[i] !== this.initialFnLayout[i]) return true;
+    }
+    return false;
+  }
+
+  updateUndoButton() {
+    if (this.dom.undoBtn) {
+      this.dom.undoBtn.disabled = this.historyStack.length === 0;
+      if (this.historyStack.length > 0) {
+        this.dom.undoBtn.title = `${i18n.t("actions.undo")} (${this.historyStack.length})`;
+      } else {
+        this.dom.undoBtn.title = i18n.t("actions.undo");
+      }
+    }
   }
 
   renderPalette(category) {
@@ -527,6 +633,10 @@ class HHKBApp {
       const fn = await this.device.readKeymap(true);
       this.fnLayout.set(fn);
 
+      this.initialStandardLayout.set(this.standardLayout);
+      this.initialFnLayout.set(this.fnLayout);
+      this.historyStack = [];
+      this.updateUndoButton();
       this.renderKeyboard();
       this.updateSelectionBar();
       this.markSaved();
@@ -555,6 +665,10 @@ class HHKBApp {
       this.log("Writing Fn Layer (128 bytes)...");
       await this.device.writeKeymap(this.fnLayout, true);
 
+      this.initialStandardLayout.set(this.standardLayout);
+      this.initialFnLayout.set(this.fnLayout);
+      this.historyStack = [];
+      this.updateUndoButton();
       this.markSaved();
       this.log(i18n.t("actions.writeSuccess"));
       alert(i18n.t("actions.writeSuccess"));

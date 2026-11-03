@@ -33,6 +33,9 @@ export default {
   actions: {
     readKeymap: "Read Keymap",
     writeKeymap: "Flash to Keyboard",
+    undo: "Undo (Cmd+Z)",
+    discardChanges: "Discard All Changes",
+    undoLog: "Undid modification: Key #{index} restored to [{key}]",
     resetFactory: "Reset to Factory",
     exportJson: "Backup to JSON",
     importJson: "Restore from JSON",

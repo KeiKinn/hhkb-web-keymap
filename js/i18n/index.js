@@ -38,6 +38,9 @@ const en = {
   actions: {
     readKeymap: "Read Keymap",
     writeKeymap: "Flash to Keyboard",
+    undo: "Undo (Cmd+Z)",
+    discardChanges: "Discard All Changes",
+    undoLog: "Undid modification: Key #{index} restored to [{key}]",
     resetFactory: "Reset to Factory",
     exportJson: "Backup to JSON",
     importJson: "Restore from JSON",
@@ -116,6 +119,9 @@ const zhCN = {
   actions: {
     readKeymap: "读取当前键位",
     writeKeymap: "烧录到键盘芯片",
+    undo: "撤销更改 (Cmd+Z)",
+    discardChanges: "放弃所有更改",
+    undoLog: "已撤销修改：按键 #{index} 恢复为 [{key}]",
     resetFactory: "恢复出厂设置",
     exportJson: "备份键位到 JSON",
     importJson: "从 JSON 恢复",
