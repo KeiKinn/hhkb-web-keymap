@@ -452,6 +452,8 @@ class HHKBApp {
 
     this.log(`✓ 已修改按键 #${this.selectedKeyIndex}：从 [${getKeyName(prevCode)}] 改为 [${getKeyName(code)}] (0x${code.toString(16).padStart(2, "0").toUpperCase()}) [层: ${this.currentLayer}]`);
   }
+
+  renderPalette(category) {
     this.dom.paletteContainer.innerHTML = "";
     const filtered = HID_KEYCODES.filter((k) => k.category === category);
 
@@ -470,20 +472,6 @@ class HHKBApp {
 
       this.dom.paletteContainer.appendChild(btn);
     }
-  }
-
-  assignKeycodeToSelected(code) {
-    if (this.selectedKeyIndex === null) {
-      this.showError(new Error(i18n.t("keyboard.selectKeyPrompt")));
-      return;
-    }
-
-    const layout = this.getActiveLayout();
-    layout[this.selectedKeyIndex] = code;
-
-    this.renderKeyboard();
-    this.updateSelectionBar();
-    this.log(`Assigned key #${this.selectedKeyIndex} -> 0x${code.toString(16).padStart(2, "0").toUpperCase()} (${getKeyName(code)}) [Layer: ${this.currentLayer}]`);
   }
 
   async readFromKeyboard() {
