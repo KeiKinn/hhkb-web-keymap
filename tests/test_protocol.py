@@ -44,9 +44,9 @@ def create_write_keymap_packets(layout, mode, is_fn):
 
 def assemble_read_keymap(pass1, pass2, pass3):
     layout = bytearray(128)
-    layout[0:58] = pass1[5:5+58]
-    layout[58:116] = pass2[5:5+58]
-    layout[116:128] = pass3[5:5+12]
+    layout[0:58] = pass1[6:6+58]
+    layout[58:116] = pass2[6:6+58]
+    layout[116:128] = pass3[6:6+12]
     return layout
 
 class TestHHKBProtocol(unittest.TestCase):
@@ -90,16 +90,16 @@ class TestHHKBProtocol(unittest.TestCase):
         expected = bytes([(i * 3) % 256 for i in range(128)])
         
         resp1 = bytearray(64)
-        resp1[0:5] = b"\x55\x55\x87\x00\x00"
-        resp1[5:5+58] = expected[0:58]
+        resp1[0:6] = b"\x55\x55\x87\x00\x00\x00"
+        resp1[6:6+58] = expected[0:58]
         
         resp2 = bytearray(64)
-        resp2[0:5] = b"\x55\x55\x87\x00\x00"
-        resp2[5:5+58] = expected[58:116]
+        resp2[0:6] = b"\x55\x55\x87\x00\x00\x00"
+        resp2[6:6+58] = expected[58:116]
         
         resp3 = bytearray(64)
-        resp3[0:5] = b"\x55\x55\x87\x00\x00"
-        resp3[5:5+12] = expected[116:128]
+        resp3[0:6] = b"\x55\x55\x87\x00\x00\x00"
+        resp3[6:6+12] = expected[116:128]
         
         assembled = assemble_read_keymap(resp1, resp2, resp3)
         self.assertEqual(assembled, expected)

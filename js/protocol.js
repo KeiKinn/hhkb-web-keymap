@@ -148,8 +148,20 @@ export class HHKBPacket {
     const typeNumber = decoder.decode(data.subarray(6, 26)).replace(/\0/g, "").trim();
     const revision = decoder.decode(data.subarray(26, 30)).replace(/\0/g, "").trim();
     const serial = decoder.decode(data.subarray(30, 46)).replace(/\0/g, "").trim();
-    const appFirmware = decoder.decode(data.subarray(46, 54)).replace(/\0/g, "").trim();
-    const bootFirmware = decoder.decode(data.subarray(54, 62)).replace(/\0/g, "").trim();
+
+    // Firmware version is stored as binary BCD numbers
+    const f = data.subarray(46, 50);
+    let appFirmware = "";
+    if (f[0] !== 0 || f[1] !== 0 || f[2] !== 0 || f[3] !== 0) {
+      appFirmware = `${f[0].toString(16).toUpperCase()}${f[1]}.${f[2]}${f[3]}`;
+    }
+
+    const b = data.subarray(54, 58);
+    let bootFirmware = "";
+    if (b[0] !== 0 || b[1] !== 0 || b[2] !== 0 || b[3] !== 0) {
+      bootFirmware = `${b[0].toString(16).toUpperCase()}${b[1]}.${b[2]}${b[3]}`;
+    }
+
     return {
       typeNumber,
       revision,
@@ -239,8 +251,8 @@ export class HHKBDevice {
     const packet = HHKBPacket.createGetKeyboardModePacket();
     await this.sendPacket(packet, "GET_KEYBOARD_MODE");
     const resp = await this.receiveReport("RESP_KEYBOARD_MODE");
-    // Mode is in resp[5] (index 6 in 65-byte buffer, index 5 in 64-byte payload)
-    return resp[5];
+    // Mode is in resp[6]
+    return resp[6];
   }
 
   async getKeyboardInfo() {
@@ -288,17 +300,17 @@ export class HHKBDevice {
     // Read 3 passes from device
     const pass1 = await this.receiveReport("GET_KEYMAP_PASS1");
     for (let i = 0; i < 58; i++) {
-      layout[i] = pass1[5 + i];
+      layout[i] = pass1[6 + i];
     }
 
     const pass2 = await this.receiveReport("GET_KEYMAP_PASS2");
     for (let i = 0; i < 58; i++) {
-      layout[i + 58] = pass2[5 + i];
+      layout[i + 58] = pass2[6 + i];
     }
 
     const pass3 = await this.receiveReport("GET_KEYMAP_PASS3");
     for (let i = 0; i < 12; i++) {
-      layout[i + 116] = pass3[5 + i];
+      layout[i + 116] = pass3[6 + i];
     }
 
     return layout;
