@@ -11,6 +11,10 @@ export default {
     statusError: "连接失败: {error}",
     browserUnsupported: "当前浏览器不支持 WebHID API。请使用 Google Chrome、Microsoft Edge 或 Opera (89+ 版本)。",
   },
+  theme: {
+    classicWhite: "经典灰白 (Classic)",
+    charcoal: "极客墨黑 (Charcoal)",
+  },
   device: {
     infoTitle: "硬件信息",
     model: "机型型号",

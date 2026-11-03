@@ -11,6 +11,10 @@ export default {
     statusError: "Connection failed: {error}",
     browserUnsupported: "WebHID is not supported by your browser. Please use Chrome, Edge, or Opera (version 89+).",
   },
+  theme: {
+    classicWhite: "Classic White",
+    charcoal: "Charcoal Dark",
+  },
   device: {
     infoTitle: "Device Information",
     model: "Model",

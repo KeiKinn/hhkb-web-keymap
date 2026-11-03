@@ -47,12 +47,28 @@ class HHKBApp {
       errorClose: document.getElementById("error-close"),
 
       langSelect: document.getElementById("lang-select"),
+      themeSelect: document.getElementById("theme-select"),
     };
 
+    this.initTheme();
     this.bindEvents();
     this.renderKeyboard();
     this.renderPalette("basic");
     i18n.notify();
+  }
+
+  initTheme() {
+    const savedTheme = localStorage.getItem("hhkb_theme") || "classic-white";
+    this.setTheme(savedTheme);
+  }
+
+  setTheme(theme) {
+    this.currentTheme = theme;
+    document.documentElement.setAttribute("data-theme", theme);
+    if (this.dom.themeSelect) {
+      this.dom.themeSelect.value = theme;
+    }
+    localStorage.setItem("hhkb_theme", theme);
   }
 
   initDefaultLayouts() {
@@ -117,6 +133,13 @@ class HHKBApp {
       i18n.setLocale(e.target.value);
       this.updateSelectionBar();
     });
+
+    // Theme selection
+    if (this.dom.themeSelect) {
+      this.dom.themeSelect.addEventListener("change", (e) => {
+        this.setTheme(e.target.value);
+      });
+    }
 
     this.dom.errorClose.addEventListener("click", () => this.clearError());
     this.dom.clearLogBtn.addEventListener("click", () => (this.dom.logArea.value = ""));
@@ -283,7 +306,7 @@ class HHKBApp {
 
         const keyBtn = document.createElement("button");
         keyBtn.type = "button";
-        keyBtn.className = "key-cap";
+        keyBtn.className = `key-cap ${k.isModifier ? "key-modifier" : "key-alpha"}`;
         if (this.selectedKeyIndex === k.index) {
           keyBtn.classList.add("selected");
         }
