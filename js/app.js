@@ -1,6 +1,6 @@
-import { i18n } from "./i18n/index.js?v=1.2.5";
-import { PFU_VENDOR_ID, HHKBDevice, HHKBError } from "./protocol.js?v=1.2.5";
-import { HHKB_ANSI_LAYOUT, HID_KEYCODES, DOM_CODE_TO_HID, getKeyName } from "./keymap-data.js?v=1.2.5";
+import { i18n } from "./i18n/index.js?v=1.3.0";
+import { PFU_VENDOR_ID, HHKBDevice, HHKBError } from "./protocol.js?v=1.3.0";
+import { HHKB_ANSI_LAYOUT, HID_KEYCODES, DOM_CODE_TO_HID, getKeyName } from "./keymap-data.js?v=1.3.0";
 
 class HHKBApp {
   constructor() {
