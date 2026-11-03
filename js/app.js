@@ -390,7 +390,12 @@ class HHKBApp {
   }
 
   selectKey(index) {
-    this.selectedKeyIndex = index;
+    if (this.selectedKeyIndex === index) {
+      // Toggle off selection if clicked again
+      this.selectedKeyIndex = null;
+    } else {
+      this.selectedKeyIndex = index;
+    }
     this.renderKeyboard();
     this.updateSelectionBar();
   }
