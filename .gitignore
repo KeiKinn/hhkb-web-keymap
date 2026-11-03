@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Build & OS Artifacts
+*.dmg
+*.pkg
+*.app
+hhkb-keymap-tool
+
+# Logs & temp
+*.log
+.vscode/
+.idea/

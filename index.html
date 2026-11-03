@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HHKB Web Keymap Tool</title>
+  <meta name="description" content="Browser-based hardware keymap editor for HHKB Classic & Hybrid series via WebHID API.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⌨️</text></svg>">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="header-left">
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <h1 data-i18n="app.title">HHKB Web Keymap Tool</h1>
+            <span class="logo-badge" data-i18n="app.badge">WebHID Native</span>
+          </div>
+          <p class="subtitle" data-i18n="app.subtitle">Browser-based hardware keymap editor for HHKB Classic & Hybrid series</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <select id="lang-select" class="lang-selector">
+          <option value="en">English</option>
+          <option value="zh-CN">简体中文</option>
+        </select>
+      </div>
+    </header>
+
+    <!-- Error Banner -->
+    <div id="error-banner" class="error-banner hidden">
+      <span id="error-message"></span>
+      <button id="error-close" class="close-btn" type="button">&times;</button>
+    </div>
+
+    <!-- Main Control Bar -->
+    <section class="card">
+      <div class="control-bar">
+        <div class="status-indicator">
+          <span class="status-dot" id="status-dot"></span>
+          <span id="device-status" data-i18n="app.deviceNotConnected">No keyboard connected</span>
+        </div>
+        <div class="action-buttons">
+          <button id="connect-btn" class="btn btn-primary" type="button" data-i18n="app.connectBtn">Connect HHKB</button>
+          <button id="disconnect-btn" class="btn btn-danger hidden" type="button" data-i18n="app.disconnectBtn">Disconnect</button>
+          <button id="read-btn" class="btn" type="button" disabled data-i18n="actions.readKeymap">Read Keymap</button>
+          <button id="write-btn" class="btn btn-primary" type="button" disabled data-i18n="actions.writeKeymap">Flash to Keyboard</button>
+          <button id="reset-btn" class="btn btn-danger" type="button" disabled data-i18n="actions.resetFactory">Reset to Factory</button>
+          <button id="export-btn" class="btn" type="button" data-i18n="actions.exportJson">Backup to JSON</button>
+          <button id="import-btn" class="btn" type="button" data-i18n="actions.importJson">Restore from JSON</button>
+          <input type="file" id="import-file-input" accept=".json" class="hidden">
+        </div>
+      </div>
+
+      <!-- Device Info Details -->
+      <div id="device-info-card" class="device-info-grid hidden">
+        <div class="info-item">
+          <span class="info-label" data-i18n="device.model">Model</span>
+          <span id="info-model" class="info-value">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label" data-i18n="device.serial">Serial Number</span>
+          <span id="info-serial" class="info-value">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label" data-i18n="device.firmware">Firmware Version</span>
+          <span id="info-firmware" class="info-value">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label" data-i18n="device.mode">Keyboard Mode</span>
+          <span id="info-mode" class="info-value">-</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Layer Switcher & Status -->
+    <div class="layer-controls">
+      <div class="tab-group">
+        <button id="layer-standard-btn" class="layer-tab active" type="button" data-i18n="layers.standard">Standard Layer</button>
+        <button id="layer-fn-btn" class="layer-tab" type="button" data-i18n="layers.fn">Fn Layer</button>
+      </div>
+    </div>
+
+    <!-- Virtual Keyboard Area -->
+    <section class="keyboard-wrapper">
+      <div id="keyboard-container" class="keyboard-container">
+        <!-- Rendered dynamically by app.js -->
+      </div>
+    </section>
+
+    <!-- Selected Key Info Bar -->
+    <div id="selected-key-bar" class="selected-key-bar" data-i18n="keyboard.selectKeyPrompt">
+      Click a key on the virtual keyboard to modify its mapping
+    </div>
+
+    <!-- Keycode Palette -->
+    <section class="card palette-section">
+      <div class="palette-tabs">
+        <button class="tab-btn active" data-category="basic" type="button" data-i18n="keyboard.categories.basic">Letters & Numbers</button>
+        <button class="tab-btn" data-category="modifiers" type="button" data-i18n="keyboard.categories.modifiers">Modifiers</button>
+        <button class="tab-btn" data-category="navigation" type="button" data-i18n="keyboard.categories.navigation">Navigation & Function</button>
+        <button class="tab-btn" data-category="media" type="button" data-i18n="keyboard.categories.media">Media & Controls</button>
+        <button class="tab-btn" data-category="special" type="button" data-i18n="keyboard.categories.special">Special / None</button>
+      </div>
+      <div id="palette-container" class="palette-container">
+        <!-- Rendered dynamically by app.js -->
+      </div>
+    </section>
+
+    <!-- Logs Area -->
+    <section class="card log-section">
+      <div class="log-header">
+        <span class="log-title" data-i18n="log.title">Diagnostic Communication Logs</span>
+        <button id="clear-log-btn" class="btn" type="button" style="padding: 4px 10px; font-size: 11px;" data-i18n="log.clear">Clear Logs</button>
+      </div>
+      <textarea id="log-area" class="log-area" readonly spellcheck="false"></textarea>
+    </section>
+  </div>
+
+  <!-- Entry Script -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
