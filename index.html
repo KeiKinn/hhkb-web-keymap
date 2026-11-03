@@ -3,9 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>HHKB Web Keymap Tool</title>
   <meta name="description" content="Browser-based hardware keymap editor for HHKB Classic & Hybrid series via WebHID API.">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=1.2.0">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⌨️</text></svg>">
 </head>
 <body>
@@ -94,6 +97,12 @@
       </div>
     </section>
 
+    <!-- Unsaved Changes Banner -->
+    <div id="unsaved-banner" class="unsaved-banner hidden">
+      <span>⚠️ <strong data-i18n="actions.hasUnsavedPrompt">You have modified key mappings! Click "Flash to Keyboard" to save to your HHKB Flash chip.</strong></span>
+      <button id="quick-flash-btn" class="btn btn-primary" type="button" style="padding: 4px 10px; font-size: 12px;" data-i18n="actions.writeKeymap">Flash to Keyboard</button>
+    </div>
+
     <!-- Selected Key Info Bar -->
     <div id="selected-key-bar" class="selected-key-bar" data-i18n="keyboard.selectKeyPrompt">
       Click a key on the virtual keyboard to modify its mapping
@@ -123,7 +132,7 @@
     </section>
   </div>
 
-  <!-- Entry Script -->
-  <script type="module" src="js/app.js"></script>
+  <!-- Entry Script (with cache-busting version) -->
+  <script type="module" src="js/app.js?v=1.2.0"></script>
 </body>
 </html>

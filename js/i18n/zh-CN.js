@@ -36,6 +36,7 @@ export default {
     resetFactory: "恢复出厂设置",
     exportJson: "备份键位到 JSON",
     importJson: "从 JSON 恢复",
+    hasUnsavedPrompt: "检测到未保存的键位修改！请点击【烧录到键盘芯片】完成固化。",
     reading: "正在从键盘读取键位数据...",
     writing: "正在向键盘板载芯片烧录键位（请勿拔出数据线）...",
     writeSuccess: "键位映射已成功永久烧录到键盘内部芯片！",

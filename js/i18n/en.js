@@ -36,6 +36,7 @@ export default {
     resetFactory: "Reset to Factory",
     exportJson: "Backup to JSON",
     importJson: "Restore from JSON",
+    hasUnsavedPrompt: "You have unwritten keymap changes! Click 'Flash to Keyboard' to persist to hardware.",
     reading: "Reading layout from keyboard...",
     writing: "Flashing keymap to hardware (Do not unplug)...",
     writeSuccess: "Successfully flashed keymap into keyboard onboard Flash!",

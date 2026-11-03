@@ -38,6 +38,8 @@ class HHKBApp {
 
       keyboardContainer: document.getElementById("keyboard-container"),
       selectedKeyBar: document.getElementById("selected-key-bar"),
+      unsavedBanner: document.getElementById("unsaved-banner"),
+      quickFlashBtn: document.getElementById("quick-flash-btn"),
       paletteContainer: document.getElementById("palette-container"),
 
       logArea: document.getElementById("log-area"),
@@ -155,6 +157,9 @@ class HHKBApp {
     // Hardware Actions
     this.dom.readBtn.addEventListener("click", () => this.readFromKeyboard());
     this.dom.writeBtn.addEventListener("click", () => this.writeToKeyboard());
+    if (this.dom.quickFlashBtn) {
+      this.dom.quickFlashBtn.addEventListener("click", () => this.writeToKeyboard());
+    }
     this.dom.resetBtn.addEventListener("click", () => this.resetFactory());
 
     // JSON Import / Export
@@ -169,10 +174,16 @@ class HHKBApp {
         return;
       }
 
-      if (this.selectedKeyIndex !== null && DOM_CODE_TO_HID[e.code] !== undefined) {
-        e.preventDefault();
+      if (this.selectedKeyIndex !== null) {
         const hidCode = DOM_CODE_TO_HID[e.code];
-        this.assignKeycodeToSelected(hidCode);
+        if (hidCode !== undefined) {
+          e.preventDefault();
+          e.stopPropagation();
+          this.log(`[Key Pressed] Detected: ${e.code} -> Mapping to HID: 0x${hidCode.toString(16).padStart(2, "0").toUpperCase()}`);
+          this.assignKeycodeToSelected(hidCode);
+        } else {
+          this.log(`[Key Pressed] Key ${e.code} not mapped in direct recorder.`);
+        }
       }
     });
 
@@ -372,23 +383,49 @@ class HHKBApp {
 
     this.dom.selectedKeyBar.classList.add("recording");
     this.dom.selectedKeyBar.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-        <span><strong>${i18n.t("keyboard.selectedKeyListening", {
-          keyIndex: this.selectedKeyIndex,
-          keyLabel: keyDef?.defaultLabel || "",
-        })}</strong></span>
-        <span style="color:#60a5fa;">[ 当前: 0x${scancode.toString(16).padStart(2, "0").toUpperCase()} (${keyName}) ]</span>
+      <div style="display:flex; flex-direction:column; gap:10px; width:100%;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <span><strong>🎯 已选中 #${this.selectedKeyIndex} (${keyDef?.defaultLabel || ""})</strong>: 当前功能 = <span style="color:#60a5fa; font-weight:700;">0x${scancode.toString(16).padStart(2, "0").toUpperCase()} (${keyName})</span></span>
+          <span style="font-size:12px; color:#4ade80; background:rgba(74,222,128,0.15); padding:2px 8px; border-radius:4px;">● 物理键盘录制就绪：直接在键盘上敲按键即可</span>
+        </div>
+        <div class="quick-pill-row">
+          <span style="font-size:12px; color:#94a3b8;">一键快速替换为:</span>
+          <button type="button" class="quick-pill-btn" data-code="0x2a">⌫ Backspace (0x2A)</button>
+          <button type="button" class="quick-pill-btn" data-code="0x31">\\ | 反斜杠 (0x31)</button>
+          <button type="button" class="quick-pill-btn" data-code="0x4c">⌦ Delete (0x4C)</button>
+          <button type="button" class="quick-pill-btn" data-code="0x29">⎋ Esc (0x29)</button>
+          <button type="button" class="quick-pill-btn" data-code="0x28">↵ Return (0x28)</button>
+          <button type="button" class="quick-pill-btn" data-code="0xe0">⌃ Control (0xE0)</button>
+        </div>
       </div>
     `;
+
+    // Bind quick pill buttons
+    this.dom.selectedKeyBar.querySelectorAll(".quick-pill-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const code = parseInt(btn.dataset.code, 16);
+        this.assignKeycodeToSelected(code);
+      });
+    });
   }
 
   markUnsaved() {
     this.hasUnsavedChanges = true;
+    if (this.dom.unsavedBanner) {
+      this.dom.unsavedBanner.classList.remove("hidden");
+    }
     this.dom.writeBtn.classList.add("btn-pulse");
+    if (this.device) {
+      this.dom.writeBtn.disabled = false;
+    }
   }
 
   markSaved() {
     this.hasUnsavedChanges = false;
+    if (this.dom.unsavedBanner) {
+      this.dom.unsavedBanner.classList.add("hidden");
+    }
     this.dom.writeBtn.classList.remove("btn-pulse");
   }
 
@@ -405,6 +442,14 @@ class HHKBApp {
     this.markUnsaved();
     this.renderKeyboard();
     this.updateSelectionBar();
+
+    // Add updated flash animation to the changed key
+    const targetKeyEl = document.querySelector(`.key-cap.selected`);
+    if (targetKeyEl) {
+      targetKeyEl.classList.add("just-updated");
+      setTimeout(() => targetKeyEl.classList.remove("just-updated"), 500);
+    }
+
     this.log(`✓ 已修改按键 #${this.selectedKeyIndex}：从 [${getKeyName(prevCode)}] 改为 [${getKeyName(code)}] (0x${code.toString(16).padStart(2, "0").toUpperCase()}) [层: ${this.currentLayer}]`);
   }
     this.dom.paletteContainer.innerHTML = "";
