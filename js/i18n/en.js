@@ -44,7 +44,9 @@ export default {
   },
   keyboard: {
     selectKeyPrompt: "Click a key on the virtual keyboard to modify its mapping",
+    selectedKeyListening: "[Recording Mode] Key #{keyIndex} ({keyLabel}) selected: 👉 Press any physical key on your keyboard, or click a scancode below",
     selectedKeyInfo: "Key #{keyIndex} ({keyLabel}): Current Scancode = 0x{scancode} ({keyName})",
+    unsavedChanges: "⚠️ Unsaved changes. Click 'Flash to Keyboard' above to persist to hardware!",
     categories: {
       basic: "Letters & Numbers",
       modifiers: "Modifiers",

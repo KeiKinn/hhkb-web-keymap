@@ -1,6 +1,6 @@
 import { i18n } from "./i18n/index.js";
 import { PFU_VENDOR_ID, HHKBDevice, HHKBError } from "./protocol.js";
-import { HHKB_ANSI_LAYOUT, HID_KEYCODES, getKeyName } from "./keymap-data.js";
+import { HHKB_ANSI_LAYOUT, HID_KEYCODES, DOM_CODE_TO_HID, getKeyName } from "./keymap-data.js";
 
 class HHKBApp {
   constructor() {
@@ -161,6 +161,20 @@ class HHKBApp {
     this.dom.exportBtn.addEventListener("click", () => this.exportJson());
     this.dom.importBtn.addEventListener("click", () => this.dom.importFileInput.click());
     this.dom.importFileInput.addEventListener("change", (e) => this.importJson(e));
+
+    // Physical keyboard press listener (Direct recording)
+    window.addEventListener("keydown", (e) => {
+      // Ignore if typing inside textareas or inputs
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") {
+        return;
+      }
+
+      if (this.selectedKeyIndex !== null && DOM_CODE_TO_HID[e.code] !== undefined) {
+        e.preventDefault();
+        const hidCode = DOM_CODE_TO_HID[e.code];
+        this.assignKeycodeToSelected(hidCode);
+      }
+    });
 
     // Palette tab switching
     document.querySelectorAll(".tab-btn").forEach((btn) => {
@@ -346,6 +360,7 @@ class HHKBApp {
 
   updateSelectionBar() {
     if (this.selectedKeyIndex === null) {
+      this.dom.selectedKeyBar.classList.remove("recording");
       this.dom.selectedKeyBar.textContent = i18n.t("keyboard.selectKeyPrompt");
       return;
     }
@@ -355,15 +370,43 @@ class HHKBApp {
     const scancode = layout[this.selectedKeyIndex] || 0;
     const keyName = getKeyName(scancode);
 
-    this.dom.selectedKeyBar.textContent = i18n.t("keyboard.selectedKeyInfo", {
-      keyIndex: this.selectedKeyIndex,
-      keyLabel: keyDef?.defaultLabel || "",
-      scancode: scancode.toString(16).padStart(2, "0").toUpperCase(),
-      keyName,
-    });
+    this.dom.selectedKeyBar.classList.add("recording");
+    this.dom.selectedKeyBar.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+        <span><strong>${i18n.t("keyboard.selectedKeyListening", {
+          keyIndex: this.selectedKeyIndex,
+          keyLabel: keyDef?.defaultLabel || "",
+        })}</strong></span>
+        <span style="color:#60a5fa;">[ 当前: 0x${scancode.toString(16).padStart(2, "0").toUpperCase()} (${keyName}) ]</span>
+      </div>
+    `;
   }
 
-  renderPalette(category) {
+  markUnsaved() {
+    this.hasUnsavedChanges = true;
+    this.dom.writeBtn.classList.add("btn-pulse");
+  }
+
+  markSaved() {
+    this.hasUnsavedChanges = false;
+    this.dom.writeBtn.classList.remove("btn-pulse");
+  }
+
+  assignKeycodeToSelected(code) {
+    if (this.selectedKeyIndex === null) {
+      this.showError(new Error(i18n.t("keyboard.selectKeyPrompt")));
+      return;
+    }
+
+    const layout = this.getActiveLayout();
+    const prevCode = layout[this.selectedKeyIndex];
+    layout[this.selectedKeyIndex] = code;
+
+    this.markUnsaved();
+    this.renderKeyboard();
+    this.updateSelectionBar();
+    this.log(`✓ 已修改按键 #${this.selectedKeyIndex}：从 [${getKeyName(prevCode)}] 改为 [${getKeyName(code)}] (0x${code.toString(16).padStart(2, "0").toUpperCase()}) [层: ${this.currentLayer}]`);
+  }
     this.dom.paletteContainer.innerHTML = "";
     const filtered = HID_KEYCODES.filter((k) => k.category === category);
 
@@ -416,6 +459,7 @@ class HHKBApp {
 
       this.renderKeyboard();
       this.updateSelectionBar();
+      this.markSaved();
       this.log("Successfully fetched both Standard and Fn layers from keyboard.");
     } catch (err) {
       this.showError(err);
@@ -441,6 +485,7 @@ class HHKBApp {
       this.log("Writing Fn Layer (128 bytes)...");
       await this.device.writeKeymap(this.fnLayout, true);
 
+      this.markSaved();
       this.log(i18n.t("actions.writeSuccess"));
       alert(i18n.t("actions.writeSuccess"));
     } catch (err) {

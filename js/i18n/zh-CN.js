@@ -43,8 +43,10 @@ export default {
     resetSuccess: "已成功将键盘重置为原厂默认配置。",
   },
   keyboard: {
-    selectKeyPrompt: "点击上方虚拟键盘中的按键以修改其映射功能",
+    selectKeyPrompt: "点击上方虚拟键盘选中要修改的按键",
+    selectedKeyListening: "【录制模式】按键 #{keyIndex} ({keyLabel}) 已选中：👉 请直接按下你的物理键盘按键，或点击下方键码库进行修改",
     selectedKeyInfo: "按键 #{keyIndex} ({keyLabel}): 当前键码 = 0x{scancode} ({keyName})",
+    unsavedChanges: "⚠️ 有未烧录的修改，请点击右上角【烧录到键盘芯片】完成固化！",
     categories: {
       basic: "常规字母 & 数字",
       modifiers: "修饰键 (Control/Cmd/Opt)",
